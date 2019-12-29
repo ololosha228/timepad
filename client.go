@@ -2,6 +2,7 @@ package timepad
 
 import (
 	"encoding/json"
+	"html"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -64,6 +65,8 @@ func (e *Event) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
+
+	m["name"] = html.UnescapeString(m["name"].(string))
 
 	t, err := time.Parse("2006-01-02T15:04:05-0700", m["starts_at"].(string))
 	if err != nil {
