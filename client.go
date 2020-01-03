@@ -71,6 +71,7 @@ func (e *Event) UnmarshalJSON(b []byte) error {
 	}
 
 	m["name"] = strings.ReplaceAll(m["name"].(string), "&quot;", "\"")
+	m["description_short"] = strings.ReplaceAll(m["description_short"].(string), "&quot;", "\"")
 
 	t, err := time.Parse("2006-01-02T15:04:05-0700", m["starts_at"].(string))
 	if err != nil {
