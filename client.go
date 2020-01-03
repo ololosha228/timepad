@@ -2,30 +2,34 @@ package timepad
 
 import (
 	"encoding/json"
-	"html"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
 )
 
-func GetEvents() ([]*Event, error) {
+const (
+	apiHost = "api.timepad.ru"
+)
+
+func GetEvents(count int) ([]*Event, error) {
 	link := url.URL{
 		Scheme: "https",
-		Host:   "api.timepad.ru",
+		Host:   apiHost,
 		Path:   "/v1/events",
+		RawQuery: url.Values{
+			"fields":              []string{"location,description_short"},
+			"limit":               []string{strconv.Itoa(count)},
+			"sort":                []string{"+starts_at"},
+			"cities":              []string{"Москва"},
+			"moderation_statuses": []string{"featured"},
+		}.Encode(),
 	}
-	link.RawQuery = url.Values{
-		"fields":              []string{"location"},
-		"limit":               []string{"10"},
-		"sort":                []string{"+starts_at"},
-		"cities":              []string{"Москва"},
-		"moderation_statuses": []string{"featured"},
-	}.Encode()
 
-	println(link.String())
 	res, err := http.Get(link.String())
 	if err != nil {
 		return nil, err
@@ -38,7 +42,6 @@ func GetEvents() ([]*Event, error) {
 		Total  int      `json:"total`
 		Values []*Event `json:"values"`
 	}{}
-
 	err = json.Unmarshal(body, &total)
 	if err != nil {
 		return nil, err
@@ -48,11 +51,12 @@ func GetEvents() ([]*Event, error) {
 }
 
 type Event struct {
-	ID       int       `json:"id"`
-	StartsAt time.Time `json:"starts_at"`
-	Name     string    `json:"name"`
-	URL      string    `json:"url"`
-	Category string    `json:"categories"`
+	ID              int       `json:"id"`
+	StartsAt        time.Time `json:"starts_at"`
+	Name            string    `json:"name"`
+	DescriptonShort string    `json:"description_short"`
+	URL             string    `json:"url"`
+	Category        string    `json:"categories"`
 }
 
 func (e *Event) UnmarshalJSON(b []byte) error {
@@ -66,7 +70,7 @@ func (e *Event) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	m["name"] = html.UnescapeString(m["name"].(string))
+	m["name"] = strings.ReplaceAll(m["name"].(string), "&quot;", "\"")
 
 	t, err := time.Parse("2006-01-02T15:04:05-0700", m["starts_at"].(string))
 	if err != nil {
